@@ -1,213 +1,136 @@
 <template>
-  <section class="base-dr">
-    <h1 class="domain-registration">Domain Registration</h1>
-    <section class="in-bundle" v-for="cartItem in cart">
-      <span class="oval-3"></span>
-      <span class="domain-name">{{`${cartItem.state.name}.${cartItem.state.tld}`}}</span>
-      <span class="price">{{formatPrice(cartItem.state.price)}}</span>
-      <span class="renewal-price">{{`Auto-renewal ${formatPrice(cartItem.state.renewalPrice)}`}}</span>
-      <section class="main-options">
-        <select class="registration-period" v-model="cartItem.state.metadata.registration" @change="registrationChange(cartItem.id , $event)">
-          <option value="1">1 Year</option>
-          <option value="2">2 Years</option>
-          <option value="3">3 Years</option>
-          <option value="4">4 Years</option>
-          <option value="5">5 Years</option>
-        </select>
-        <span class="autorenew-option"><span class="autorenew-option-title">Auto-renew</span><input
-          type="checkbox" v-model="cartItem.state.autorenew" @change="autorenewChange(cartItem.id, $event)"/></span>
-      </section>
-      <section class="features">
-        <section class="features-list">
-          <section class="feature">
-            <span class="feature-name">WhoisGuard</span>
-            <span class="feature-price">{{formatPrice(cartItem.state.metadata.features.whoisguard.price)}}</span>
-            <input type="checkbox" v-model="cartItem.state.metadata.features.whoisguard.active" @change="whoisguardToggle(cartItem.id, $event)"/>
-          </section>
-        </section>
-      </section>
-    </section>
+  <section class="cart">
+    <div class="cart-item" v-for="cartItem in widgetCartItems">
+      <div class="heading">
+        <div class="name">
+          <h3>{{cartItem.state.name}} {{cartItem.state.price.price | currency}}</h3>
+        </div>
+        <div class="buttons">
+          <button @click="removeItem(cartItem.id)">X</button>
+        </div>
+      </div>
+      <div class="main-options">
+        <div class="option">
+          <label>
+            <span>Billing cycles count</span>
+            <select class="billing-cycles-count" :value="cartItem.state.billingCyclesCount" @change="billingCyclesCountChange(cartItem.id, $event)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </label>
+        </div>
+        <div class="option">
+          <label>
+            <span>Auto-renew</span>
+            <input type="checkbox" :checked="cartItem.state.autorenew" @change="autorenewChange(cartItem.id, $event)"/>
+          </label>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script>
   export default {
-    name: 'Domain',
-    props: ['WidgetSdk', 'cartItems'],
-    computed: {
+    name: 'Default',
+    props: {
+      widgetSdk: {
+        type: Object,
+        required: true,
+      },
+      items: {
+        type: Array,
+        default: [],
+      },
     },
     data() {
       return {
-        cart: this.cartItems
+        widgetCartItems: this.items
       }
     },
     created() {
-      this.WidgetSdk.subscribe(this.listener);
-    },
-    destroyed() {
-      console.log('destroyed')
-    },
-    beforeDestroy() {
-      console.log('beforeDestroy');
+      this.widgetSdk.subscribe(this.listener);
     },
     methods: {
-      formatPrice: price => (price > 0 ? `$${Math.floor(price / 100)}.${Math.floor(price % 100)}` : 'FREE'),
-      whoisguardToggle(id, e) {
-        console.log(id, e);
-      },
-      registrationChange(id, e) {
-        this.WidgetSdk.setMetadata(id, {path: 'registration', value: e.target.value})
-      },
       autorenewChange(id, e) {
+        this.widgetSdk.setAutorenew(id, e.target.checked);
+      },
+      billingCyclesCountChange(id, e) {
+        this.widgetSdk.setBillingCyclesCount(id, e.target.value);
+      },
+      // eslint-disable-next-line no-unused-vars
+      listener({actionType, payload, error}) {
+        if (error) {
+          return;
+        }
+
+        this.widgetCartItems = payload;
 
       },
-      listener({actionType, payload, error}) {
-        this.cart = this.cart.map(item => item.id === payload.id ? payload : item);
+      removeItem(id) {
+        this.widgetSdk.removeItem(id);
       }
     }
   }
 </script>
 
-<style>
-  section.base-dr {
+<style scoped>
+  .cart {
     width: 768px;
     border: 1px solid #F5F5F5;
     border-radius: 10px;
     background-color: #F5F5F5;
-    padding-bottom: 15px;
+    padding: 15px;
     margin: 20px;
   }
 
-  h1.domain-registration {
-    height: 24px;
-    width: 189px;
-    color: #222222;
-    font-family: Roboto serif;
-    font-size: 20px;
-    font-weight: 900;
-    line-height: 24px;
-  }
-
-  section.in-bundle {
+  .cart-item {
+    position: relative;
     margin: 0 auto;
-    width: 670px;
     border: 1px solid #EEEEEE;
     border-radius: 10px;
     background-color: #FFFFFF;
     padding: 25px;
   }
 
-  span.oval-3 {
-    display: inline-block;
-    height: 40px;
-    width: 40px;
-    float: left;
-    background-color: #8A8A8A;
+  .cart-item + .cart-item {
+    margin-top: 15px;
   }
 
-  span.domain-name {
-    height: 28px;
-    width: 419px;
-    color: #222222;
-    font-family: Roboto serif;
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 28px;
+  .cart-item .heading {
+    display: flex;
+    margin: 0 0 15px;
   }
 
-  span.price {
-    float: right;
-    height: 28px;
-    width: 66px;
-    color: #6D6F70;
-    font-family: Roboto serif;
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 28px;
-    text-align: right;
+  .cart-item .name {
+    flex: 1;
   }
 
-  span.renewal-price {
-    height: 19px;
-    width: 98px;
-    color: #AEAEAE;
-    font-family: Roboto serif;
-    font-size: 16px;
-    font-weight: 300;
-    line-height: 19px;
-    text-align: right;
-    position: relative;
-    top: 28px;
-    right: -175px;
+  .cart-item h3 {
+    margin: 0;
   }
 
-  select.registration-period {
-    height: 56px;
-    width: 327px;
-    border: 1px solid #EEEEEE;
-    border-radius: 10px;
-    background-color: #FFFFFF;
-    float: left;
+  .cart-item .main-options {
+    display: flex;
   }
 
-  section.main-options {
-    margin-top: 40px;
+  .cart-item .option {
+    padding: 15px;
+    border: 1px solid #ccc;
   }
 
-  span.autorenew-option {
-    height: 56px;
-    width: 327px;
-    border: 1px solid #EEEEEE;
-    border-radius: 10px;
-    background-color: #FFFFFF;
-    display: inline-block;
-    float: right;
+  .cart-item .option + .option {
+    margin: 0 0 0 15px;
   }
 
-  span.autorenew-option-title {
-    height: 19px;
-    width: 178.98px;
-    color: #6D6F70;
-    font-family: Roboto serif;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 19px;
+  .cart-item .option label > span {
+    margin: 0 5px 0 0;
   }
 
-  section.features {
-    width: 636px;
-    border: 1px solid #EEEEEE;
-    background-color: #FAFAFA;
-    margin-top: 116px;
-    padding: 16px;
+  .cart-item select {
+    min-width: 100px;
   }
-
-  .features-total-price {
-    height: 19px;
-    width: 71px;
-    color: #6D6F70;
-    font-size: 16px;
-    line-height: 19px;
-    text-align: right;
-    display: inline-block;
-    float: right;
-  }
-
-  .feature {
-    height: 56px;
-    width: 640px;
-    border: 1px solid #EEEEEE;
-    border-radius: 10px;
-    background-color: #FFFFFF;
-    margin-bottom: 16px;
-  }
-
-  .feature-price {
-    margin: 0 15px;
-  }
-
-  .features-list {
-    margin-top: 25px;
-  }
-
 </style>
